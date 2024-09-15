@@ -16,15 +16,18 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
-    console.log(`User ${socket.id.substring(0, 5)} is connected`)
+    console.log(`User ${socket.id.substring(0, 5)} is connected`);
 
-    //handling user joining the room
+    // Handling user joining the room
     socket.on("userJoinRoom", (data) => {
         const { username, roomId } = data || {};
+        socket.join(roomId);
 
-        socket.join(roomId)
+        console.log(`${username} has joined the room ${roomId}`);
+    });
 
-        console.log(`${username} has joined the room ${roomId}`)
-    })
-
+    // Broadcast message to everyone in the room
+    socket.on("sendMessage", ({ username, roomId, text }) => {
+        socket.to(roomId).emit("message", { username, text, type: "regular" });
+    });
 });

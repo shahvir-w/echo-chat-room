@@ -1,34 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getFormattedTime } from '../../util';
+import { v4 as uuidv4 } from 'uuid';
 
 const ChatScreen = ({ username, roomId, socket }) => {
   const [currentMessage, setCurrentMessage] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      text: `You have joined the room ${roomId}`,
-      type: "notif"
-    },
-    {
-      id: "2",
-      text: `You have joined the room,You have joined the room You have joined the room  `,
-      username: "shahvir",
-      type: "regular",
-    },
-    {
-      id: "3",
-      text: `You have joined the room`,
-      username: "Thurun",
-      type: "regular",
-    },
-    {
-      id: "4",
-      text: `You have joined the room `,
-      username: "shahvir",
-      type: "regular",
-    },
-
-  ]);
+  const [messages, setMessages] = useState([]);
   const [activityMsg, setActivityMsg] = useState("");
 
   const handleInputChange = (e) => {
@@ -36,9 +12,46 @@ const ChatScreen = ({ username, roomId, socket }) => {
     setCurrentMessage(value);
   };
 
+  useEffect(() => {
+    // receiving messages from server
+
+    socket.on("message", ({username, text, type}) => {
+      const uuid = uuidv4();
+      setMessages(prevMessages => [...prevMessages, {
+        id: uuid,
+        username,
+        text,
+        type
+      }])
+    })
+
+    return () => {
+      socket.off("message")
+    }
+  })
+
+
   const handleSendMessage = (e) => {
     e.preventDefault();
-    // Add logic to send the message using socket
+
+
+    // Add msg obj to the messages array
+    const uuid = uuidv4();
+    setMessages(prevMessages => [...prevMessages, {
+      id: uuid,
+      username,
+      text: currentMessage
+    }])
+
+    //bradocast messages to others
+    
+    socket.emit("sendMessage", {
+      username,
+      roomId,
+      text: currentMessage
+    })
+
+    setCurrentMessage("") 
   };
 
   return (
@@ -95,9 +108,7 @@ const ChatScreen = ({ username, roomId, socket }) => {
         <button
           type="submit"
           className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
-        >
-          Send
-        </button>
+        >Send</button>
       </form>
     </div>
   );
