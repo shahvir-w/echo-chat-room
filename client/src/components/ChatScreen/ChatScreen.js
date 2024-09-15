@@ -10,11 +10,31 @@ const ChatScreen = ({ username, roomId, socket }) => {
   const handleInputChange = (e) => {
     const value = e.target.value;
     setCurrentMessage(value);
+
+    //emit activity detection to the server
+    socket.emit("userTyping", {username, roomId})
   };
 
   useEffect(() => {
-    // receiving messages from server
+    // user typing detection
+    let timer;
 
+    socket.on("userTyping", (username) => {
+      setActivityMsg(`${username} is typing...`);
+      clearTimeout(timer);
+
+      timer = setTimeout(() => {
+        setActivityMsg("");
+      }, 2000);
+    })
+
+    return () => {
+      socket.off("userTyping");
+    }
+  }, [socket])
+  
+  useEffect(() => {
+    // receiving messages from server
     socket.on("message", ({username, text, type}) => {
       const uuid = uuidv4();
       setMessages(prevMessages => [...prevMessages, {
@@ -28,8 +48,38 @@ const ChatScreen = ({ username, roomId, socket }) => {
     return () => {
       socket.off("message")
     }
-  })
+  }, [socket])
 
+  useEffect(() => {
+    // notifying current user that another user has joined the room
+
+    socket.on("userJoined", (message) => {
+      const uuid = uuidv4();
+      setMessages(prev => [...prev, {
+        id: uuid,
+        type: "notif",
+        text: message
+      }])
+    })
+
+    return () => {
+      socket.off("userJoined");
+    }
+  }, [socket])
+
+  useEffect(() => {
+    // notifying users that another user has left the room
+
+
+    const handleBeforeUnload = (e) => {
+      socket.emit("userLeft", {username, roomId})
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [username, roomId])
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -63,33 +113,45 @@ const ChatScreen = ({ username, roomId, socket }) => {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex flex-col w-4/5 max-w-5xl h-[60vh] overflow-y-auto bg-gray-800 rounded-lg p-5">
-        {messages.length > 0 ? (
-          messages.map((message) => {
-            const { id, text, type, username: messageUsername } = message || {};
-            
-            if (type === "notif") {
-              return <div key={id} className="flex text-center justify-center text-gray-400 mb-3">{text}</div>;
-            } else {
-              return (
-                <div
-                  key={id}
-                  className={`w-3/4 flex flex-row items-center justify-between px-3 mb-3 rounded-lg text-white" ${
-                    messageUsername === username ? "bg-blue-600 self-end" : "bg-gray-700 self-start"
-                  }`}
-                >
-                  <div className="text-sm break-words my-2.5">
-                    <span className="font-bold mr-1.5">{messageUsername}:</span> 
-                    <span>{text}</span>
-                  </div>
-                  <div className="text-xs whitespace-nowrap ml-1">{getFormattedTime()}</div>
+      <div className="flex flex-col w-4/5 max-w-5xl h-[60vh] overflow-y-auto bg-gray-800 rounded-lg p-5 relative">
+        {messages.map((message) => {
+          const { id, text, type, username: messageUsername } = message || {};
+
+          if (type === "notif") {
+            return (
+              <div
+                key={id}
+                className="flex text-center justify-center text-gray-400 mb-3"
+              >
+                {text}
+              </div>
+            );
+          } else {
+            return (
+              <div
+                key={id}
+                className={`w-3/4 flex flex-row items-center justify-between px-3 mb-3 rounded-lg text-white ${
+                  messageUsername === username
+                    ? "bg-blue-600 self-end"
+                    : "bg-gray-700 self-start"
+                }`}
+              >
+                <div className="text-sm break-words my-2.5">
+                  <span className="font-bold mr-1.5">{messageUsername}:</span>
+                  <span>{text}</span>
                 </div>
-              );
-            }
-          })
-        ) : (
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 p-1 text-xs">{activityMsg}</div>
-        )}
+                <div className="text-xs whitespace-nowrap ml-1">
+                  {getFormattedTime()}
+                </div>
+              </div>
+            );
+          }
+        })}
+
+        {/* Activity message positioned at the bottom */}
+        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 p-1 text-gray-400">
+          {activityMsg}
+        </div>
       </div>
 
       {/* Input Form */}

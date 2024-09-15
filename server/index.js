@@ -23,6 +23,7 @@ io.on("connection", (socket) => {
         const { username, roomId } = data || {};
         socket.join(roomId);
 
+        socket.to(roomId).emit("userJoined", `${username} has joined the chat`);
         console.log(`${username} has joined the room ${roomId}`);
     });
 
@@ -30,4 +31,14 @@ io.on("connection", (socket) => {
     socket.on("sendMessage", ({ username, roomId, text }) => {
         socket.to(roomId).emit("message", { username, text, type: "regular" });
     });
+
+    // Handling user leaving the room
+    socket.on("userLeft", ({ username, roomId}) => {
+        socket.to(roomId).emit("message", {username, text: `${username} has left the chat`, type: "notif"})
+    })
+
+    // Handling activity detection
+    socket.on("userTyping", ({username, roomId}) => {
+        socket.to(roomId).emit("userTyping", username);
+    })
 });
