@@ -17,4 +17,14 @@ const io = new Server(httpServer, {
 
 io.on("connection", (socket) => {
     console.log(`User ${socket.id.substring(0, 5)} is connected`)
+
+    //handling user joining the room
+    socket.on("userJoinRoom", (data) => {
+        const { username, roomId } = data || {};
+
+        socket.join(roomId)
+
+        console.log(`${username} has joined the room ${roomId}`)
+    })
+
 });

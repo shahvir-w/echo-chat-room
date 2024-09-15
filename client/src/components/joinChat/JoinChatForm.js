@@ -1,7 +1,13 @@
 import React from 'react';
 import { TbMessageFilled } from "react-icons/tb";
 
-const JoinChatForm = () => {
+const JoinChatForm = ( {onJoin, setUsername, username, setRoomId, roomId} ) => {
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onJoin();
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100">
 
@@ -12,13 +18,15 @@ const JoinChatForm = () => {
 
       <div className="bg-gray-800 shadow-lg rounded-lg p-8 max-w-sm w-full">
         <h2 className="text-3xl font-semibold text-center mb-6">join a chat room</h2>
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
 
           <input
             type="text"
             placeholder="Enter your name"
             className="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-900 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+            onChange={(e) => setUsername(e.target.value)}
+            value={username}
           />
 
           <input
@@ -26,6 +34,8 @@ const JoinChatForm = () => {
             placeholder="Enter a room name"
             className="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-900 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+            onChange={(e) => setRoomId(e.target.value)}
+            value={roomId}
           />
 
           <button
