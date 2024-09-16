@@ -1,4 +1,4 @@
-# Echo Chat Room
+# Echo Chat
 
 Multi-user chat room using node.js and socket.io. 
 
